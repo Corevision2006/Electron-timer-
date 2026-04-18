@@ -1,0 +1,61 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helpers ────────────────────────────────────────────────
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthed() && request.auth.uid == userId;
+    }
+
+    function isSessionOwner(sessionId) {
+      return isAuthed() &&
+        get(/databases/$(database)/documents/sessions/$(sessionId)).data.userId == request.auth.uid;
+    }
+
+    // ─── Users ───────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read:   if isOwner(userId);
+      allow create: if isOwner(userId)
+                    && request.resource.data.keys().hasAll(["email", "createdAt"])
+                    && request.resource.data.email is string;
+      allow update: if isOwner(userId)
+                    && !request.resource.data.diff(resource.data).affectedKeys()
+                        .hasAny(["email", "createdAt"]); // immutable fields
+      allow delete: if false;
+    }
+
+    // ─── Sessions ────────────────────────────────────────────────
+    match /sessions/{sessionId} {
+      allow read:   if isAuthed() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthed()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.keys().hasAll(["userId", "startTime", "status"])
+                    && request.resource.data.status == "ACTIVE";
+      allow update: if isAuthed()
+                    && resource.data.userId == request.auth.uid
+                    && !request.resource.data.diff(resource.data).affectedKeys()
+                        .hasAny(["userId", "startTime"]); // can't change ownership or start time
+      allow delete: if false; // sessions are permanent records
+    }
+
+    // ─── Violations ──────────────────────────────────────────────
+    match /violations/{violationId} {
+      allow read:   if isAuthed() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthed()
+                    && request.resource.data.userId == request.auth.uid
+                    && isSessionOwner(request.resource.data.sessionId)
+                    && request.resource.data.keys().hasAll(["userId", "sessionId", "type", "timestamp"])
+                    && request.resource.data.type in [
+                        "APP_EXIT", "PHONE_USAGE", "DISTRACTION",
+                        "ABSENT", "TAB_SWITCH", "CAMERA_BLOCKED"
+                       ];
+      allow update: if false; // violations are immutable
+      allow delete: if false;
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "discipline-enforcer",
+  "version": "1.0.0",
+  "description": "Webcam-based study discipline enforcement with Firebase + Electron",
+  "main": "electron/main.js",
+  "homepage": "./",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "electron": "wait-on http://localhost:3000 && electron .",
+    "dev": "concurrently \"npm start\" \"npm run electron\"",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "firebase:deploy-rules": "firebase deploy --only firestore:rules"
+  },
+  "dependencies": {
+    "@mediapipe/camera_utils": "^0.3.1640029074",
+    "@mediapipe/holistic": "^0.5.1675471629",
+    "firebase": "^10.7.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "recharts": "^2.10.3"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.16",
+    "concurrently": "^8.2.2",
+    "electron": "^28.1.0",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "wait-on": "^7.2.0"
+  },
+  "browserslist": {
+    "production": [">0.2%", "not dead", "not op_mini all"],
+    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+  }
+}
